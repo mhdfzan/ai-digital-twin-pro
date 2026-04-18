@@ -1,0 +1,10 @@
+study or watch reels | study | watch reels | study
+eat out or cook | eat out | cook | cook
+go to gym or skip | gym | skip | gym
+buy something or save money | buy | save money | save money
+hangout or stay home | hangout | stay home | stay home
+work or relax | work | relax | relax
+order junk food or eat healthy | junk | healthy | healthy
+travel now or later | now | later | later
+play games or finish work | games | work | work
+sleep early or stay up | sleep early | stay up | sleep early
