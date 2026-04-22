@@ -1,25 +1,39 @@
 import joblib
+import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
-contexts, labels = [], []
+DATA_PATH  = "data/decisions.txt"
+MODEL_PATH = "model/decision_model.pkl"
 
-with open("data/decisions.txt", "r", encoding="utf-8") as f:
+contexts = []
+labels   = []
+
+with open(DATA_PATH, "r", encoding="utf-8") as f:
     for line in f:
-        if "|" not in line:
+        line = line.strip()
+        if not line or "|" not in line:
             continue
-        c, a, b, choice = [x.strip() for x in line.split("|")]
-
-        text = f"{c} [A] {a} [B] {b}"
+        parts = [x.strip() for x in line.split("|")]
+        if len(parts) != 4:
+            continue
+        context, opt_a, opt_b, chosen = parts
+        text = f"{context} [A] {opt_a} [B] {opt_b}"
         contexts.append(text)
-        labels.append(0 if choice == a else 1)
+        labels.append(0 if chosen == opt_a else 1)
+
+if len(contexts) == 0:
+    raise ValueError("❌ No valid data in decisions.txt. Format: context | optA | optB | chosen")
+
+print(f"Loaded {len(contexts)} decision samples")
 
 vec = TfidfVectorizer()
-X = vec.fit_transform(contexts)
+X   = vec.fit_transform(contexts)
 
-model = LogisticRegression()
+model = LogisticRegression(max_iter=500)
 model.fit(X, labels)
 
-joblib.dump((vec, model), "model/decision_model.pkl")
+os.makedirs("model", exist_ok=True)
+joblib.dump((vec, model), MODEL_PATH)
 
-print("Decision model ready")
+print("✅ Decision model trained and saved!")

@@ -1,6 +1,26 @@
+# Python
 venv/
 __pycache__/
 *.pyc
-app.db
-model/*.pkl
+*.pyo
+*.pyd
+
+# Environment
 .env
+.env.*
+
+# Database (contains user data — never commit)
+*.db
+
+# Trained models (large binary files — regenerate locally)
+model/**/*.pkl
+model/*.pkl
+
+# Per-user training data (private)
+data/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

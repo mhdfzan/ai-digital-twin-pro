@@ -1,16 +1,445 @@
 <!DOCTYPE html>
-<html>
-<body style="background:#020617;color:white;text-align:center;padding-top:80px;">
-<h2>Create Profile</h2>
+<html lang="en">
 
-<form method="POST">
-<input name="username" placeholder="Username"><br><br>
-<input name="password" type="password" placeholder="Password"><br><br>
-<input name="name" placeholder="Your Name"><br><br>
-<input name="bio" placeholder="Short Bio"><br><br>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LUMINOUS — Create Profile</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
 
-<button>Create Profile</button>
-</form>
+        :root {
+            --primary: #00f5ff;
+            --primary-dim: #00dce5;
+            --secondary: #ddb7ff;
+            --tertiary: #a3f421;
+            --bg: #0b1326;
+            --outline: #3a494a;
+            --text: #dae2fd;
+            --text-muted: #b9caca;
+        }
 
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+            padding: 100px 20px 40px;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(to right, rgba(58, 73, 74, 0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(58, 73, 74, 0.12) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-1 {
+            position: fixed;
+            top: -20%;
+            left: -20%;
+            width: 70vw;
+            height: 70vh;
+            background: radial-gradient(circle, rgba(0, 245, 255, 0.06) 0%, transparent 65%);
+            filter: blur(60px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-2 {
+            position: fixed;
+            bottom: -20%;
+            right: -20%;
+            width: 60vw;
+            height: 60vh;
+            background: radial-gradient(circle, rgba(163, 244, 33, 0.05) 0%, transparent 65%);
+            filter: blur(60px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 40px;
+            background: rgba(11, 19, 38, 0.6);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 245, 255, 0.06);
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+            text-transform: uppercase;
+        }
+
+        .wrap {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 480px;
+            animation: up 0.6s ease both;
+        }
+
+        @keyframes up {
+            from {
+                opacity: 0;
+                transform: translateY(24px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .card {
+            background: rgba(19, 27, 46, 0.7);
+            backdrop-filter: blur(32px);
+            border: 1px solid rgba(0, 245, 255, 0.1);
+            border-radius: 28px;
+            padding: 48px 40px;
+            box-shadow: 0 0 60px rgba(0, 245, 255, 0.05), 0 32px 80px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.4), transparent);
+        }
+
+        .tag {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 10px;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--tertiary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tag::before {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 1px;
+            background: var(--tertiary);
+            box-shadow: 0 0 6px var(--tertiary);
+        }
+
+        .card h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .card h1 span {
+            color: var(--tertiary);
+        }
+
+        .card>p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        .field label,
+        .sublabel {
+            display: block;
+            font-size: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .iw {
+            position: relative;
+        }
+
+        .iw .material-symbols-outlined {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: var(--text-muted);
+            pointer-events: none;
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 14px 14px 44px;
+            background: rgba(11, 19, 38, 0.8);
+            border: 1px solid rgba(58, 73, 74, 0.5);
+            border-radius: 12px;
+            color: var(--text);
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input::placeholder {
+            color: rgba(185, 202, 202, 0.3);
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.08), 0 0 20px rgba(0, 245, 255, 0.1);
+        }
+
+        .pgrid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .popt {
+            position: relative;
+        }
+
+        .popt input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .popt label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 8px;
+            background: rgba(11, 19, 38, 0.8);
+            border: 1px solid rgba(58, 73, 74, 0.4);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 11px;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .popt input:checked+label {
+            border-color: var(--primary);
+            background: rgba(0, 245, 255, 0.08);
+            color: var(--primary);
+            box-shadow: 0 0 16px rgba(0, 245, 255, 0.15);
+        }
+
+        .popt label .ic {
+            font-size: 22px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #8fdb00, var(--tertiary));
+            border: none;
+            border-radius: 12px;
+            color: #112000;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 24px rgba(163, 244, 33, 0.3);
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 40px rgba(163, 244, 33, 0.5);
+        }
+
+        .err {
+            color: #f87171;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(248, 113, 113, 0.08);
+            border-radius: 8px;
+            border: 1px solid rgba(248, 113, 113, 0.2);
+        }
+
+        .div {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 24px 0;
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        .div::before,
+        .div::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(58, 73, 74, 0.4);
+        }
+
+        .link {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .link a:hover {
+            text-shadow: 0 0 10px var(--primary);
+        }
+
+        select.hs {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="grid-bg"></div>
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+    <nav>
+        <div class="logo">Luminous</div>
+    </nav>
+    <div class="wrap">
+        <div class="card">
+            <div class="tag">New Instance</div>
+            <h1>CREATE<br /><span>PROFILE</span></h1>
+            <p>Initialize your digital twin with identity and personality configuration.</p>
+            <form method="POST" action="/signup">
+                <div class="field">
+                    <label>Identity Key</label>
+                    <div class="iw">
+                        <span class="material-symbols-outlined">person</span>
+                        <input name="username" type="text" placeholder="Choose username" required />
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Access Code</label>
+                    <div class="iw">
+                        <span class="material-symbols-outlined">lock</span>
+                        <input name="password" type="password" placeholder="Create password" required />
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Display Name</label>
+                    <div class="iw">
+                        <span class="material-symbols-outlined">badge</span>
+                        <input name="name" type="text" placeholder="Your name" required />
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Bio Signal</label>
+                    <div class="iw">
+                        <span class="material-symbols-outlined">edit_note</span>
+                        <input name="bio" type="text" placeholder="Short bio (optional)" />
+                    </div>
+                </div>
+                <div class="field">
+                    <span class="sublabel">Personality Matrix</span>
+                    <div class="pgrid">
+                        <div class="popt">
+                            <input type="radio" name="personality_ui" id="pc" value="casual" checked
+                                onchange="setP('casual')" />
+                            <label for="pc"><span class="ic">😎</span>Casual</label>
+                        </div>
+                        <div class="popt">
+                            <input type="radio" name="personality_ui" id="pf" value="formal"
+                                onchange="setP('formal')" />
+                            <label for="pf"><span class="ic">💼</span>Formal</label>
+                        </div>
+                        <div class="popt">
+                            <input type="radio" name="personality_ui" id="py" value="funny" onchange="setP('funny')" />
+                            <label for="py"><span class="ic">😂</span>Funny</label>
+                        </div>
+                    </div>
+                    <select name="personality" id="pSel" class="hs">
+                        <option value="casual">casual</option>
+                        <option value="formal">formal</option>
+                        <option value="funny">funny</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">
+                    <span class="material-symbols-outlined" style="font-size:18px;">rocket_launch</span>
+                    Initialize Twin
+                </button>
+            </form>
+            {% if error %}<div class="err">⚠ {{ error }}</div>{% endif %}
+            <div class="div">or</div>
+            <div class="link">Already synchronized? <a href="/login">Access Portal →</a></div>
+        </div>
+    </div>
+    <script>function setP(v) { document.getElementById('pSel').value = v; }</script>
 </body>
+
 </html>
