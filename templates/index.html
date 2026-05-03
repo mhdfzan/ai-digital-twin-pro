@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LUMINOUS — The Nexus</title>
+    <title>AI DigiTwin — The Nexus</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet" />
@@ -1117,6 +1117,225 @@
         .tv-status { font-size: 14px; }
         .tv-ready { color: var(--tertiary); }
         .tv-untrained { color: var(--secondary); }
+
+        /* ── LEARNING TOAST ────────────────────────── */
+        #learnToast {
+            position: fixed;
+            bottom: 72px;
+            right: 20px;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 16px;
+            background: rgba(11, 19, 38, 0.92);
+            border: 1px solid rgba(163, 244, 33, 0.3);
+            border-radius: 24px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 4px 24px rgba(163, 244, 33, 0.12);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--tertiary);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        #learnToast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .lt-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--tertiary);
+            box-shadow: 0 0 8px var(--tertiary);
+            animation: blink 1s infinite;
+            flex-shrink: 0;
+        }
+
+        /* ── FEEDBACK BUTTONS ─────────────────────── */
+        .fb-wrap {
+            margin-top: 12px;
+            border-top: 1px solid rgba(58,73,74,0.3);
+            padding-top: 10px;
+        }
+        .fb-label {
+            font-size: 9px;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .fb-btns {
+            display: flex;
+            gap: 7px;
+        }
+        .fb-btn {
+            flex: 1;
+            padding: 7px 4px;
+            border-radius: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.25s;
+            border: 1px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .fb-btn .material-symbols-outlined { font-size: 13px; }
+        .fb-ok {
+            background: rgba(163,244,33,0.08);
+            border-color: rgba(163,244,33,0.25);
+            color: var(--tertiary);
+        }
+        .fb-ok:hover { background: rgba(163,244,33,0.18); box-shadow: 0 0 12px rgba(163,244,33,0.18); }
+        .fb-ok:disabled { opacity: 0.45; cursor: default; }
+        .fb-wrong {
+            background: rgba(248,113,113,0.08);
+            border-color: rgba(248,113,113,0.25);
+            color: #f87171;
+        }
+        .fb-wrong:hover { background: rgba(248,113,113,0.18); box-shadow: 0 0 12px rgba(248,113,113,0.15); }
+        .fb-wrong:disabled { opacity: 0.45; cursor: default; }
+        .fb-done {
+            font-size: 10px;
+            color: var(--tertiary);
+            text-align: center;
+            padding: 6px;
+            animation: mi 0.3s ease both;
+        }
+        .fb-wrong-panel {
+            margin-top: 9px;
+            background: rgba(248,113,113,0.05);
+            border: 1px solid rgba(248,113,113,0.15);
+            border-radius: 10px;
+            padding: 10px;
+            animation: mi 0.3s ease both;
+        }
+        .fb-wrong-panel label {
+            font-size: 9px;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #f87171;
+            display: block;
+            margin-bottom: 7px;
+        }
+        .fb-choice-btns { display: flex; gap: 6px; margin-bottom: 8px; }
+        .fb-choice {
+            flex: 1; padding: 7px 4px; border-radius: 7px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 9px; font-weight: 600;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            cursor: pointer; transition: all 0.2s;
+            border: 1px solid rgba(58,73,74,0.5);
+            background: rgba(11,19,38,0.6); color: var(--text-muted);
+        }
+        .fb-choice.sel {
+            border-color: rgba(221,183,255,0.5);
+            background: rgba(221,183,255,0.1);
+            color: var(--secondary);
+        }
+        .fb-reason {
+            width: 100%; padding: 7px 10px;
+            background: rgba(11,19,38,0.7);
+            border: 1px solid rgba(58,73,74,0.4);
+            border-radius: 7px; color: var(--text);
+            font-family: 'Manrope', sans-serif; font-size: 11px;
+            outline: none; transition: border-color 0.3s;
+            margin-bottom: 7px; resize: none;
+        }
+        .fb-reason::placeholder { color: rgba(185,202,202,0.22); font-size: 10px; }
+        .fb-reason:focus { border-color: rgba(248,113,113,0.4); }
+        .fb-submit {
+            width: 100%; padding: 7px; border-radius: 7px;
+            background: linear-gradient(135deg, rgba(248,113,113,0.2), rgba(248,113,113,0.08));
+            border: 1px solid rgba(248,113,113,0.3); color: #f87171;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 9px; font-weight: 600; letter-spacing: 0.15em;
+            text-transform: uppercase; cursor: pointer; transition: all 0.25s;
+        }
+        .fb-submit:hover { background: rgba(248,113,113,0.28); }
+        .fb-submit:disabled { opacity: 0.45; cursor: default; }
+
+        /* ── LEARNING HISTORY PANEL ───────────────── */
+        .lhb {
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(58,73,74,0.2);
+        }
+        .lh-head {
+            display: flex; align-items: center;
+            justify-content: space-between; cursor: pointer;
+            margin-bottom: 0;
+        }
+        .lh-head .blbl { margin-bottom: 0; display: flex; align-items: center; gap: 6px; }
+        .lh-head .blbl .material-symbols-outlined { font-size: 14px; color: var(--secondary); }
+        .lh-toggle { font-size: 14px; color: var(--text-muted); transition: transform 0.25s; }
+        .lh-toggle.open { transform: rotate(180deg); }
+        .lh-body { overflow: hidden; max-height: 0; transition: max-height 0.35s ease; }
+        .lh-body.open { max-height: 400px; }
+        .lh-acc-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: 12px; margin-bottom: 8px;
+        }
+        .lh-acc-label {
+            font-size: 10px; font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
+        }
+        .lh-acc-val {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px; font-weight: 700;
+        }
+        .lh-acc-val.good { color: var(--tertiary); }
+        .lh-acc-val.mid { color: #facc15; }
+        .lh-acc-val.low { color: #f87171; }
+        .lh-acc-bar { height: 4px; background: rgba(58,73,74,0.4); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
+        .lh-acc-fill { height: 100%; border-radius: 2px; background: var(--tertiary); transition: width 0.6s ease; }
+        .lh-retrain {
+            width: 100%; padding: 6px; border-radius: 7px;
+            background: rgba(221,183,255,0.08);
+            border: 1px solid rgba(221,183,255,0.2);
+            color: var(--secondary); font-family: 'Space Grotesk', sans-serif;
+            font-size: 8px; font-weight: 600; letter-spacing: 0.15em;
+            text-transform: uppercase; cursor: pointer; transition: all 0.25s;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+            margin-bottom: 10px;
+        }
+        .lh-retrain .material-symbols-outlined { font-size: 12px; }
+        .lh-retrain:hover { background: rgba(221,183,255,0.16); }
+        .lh-list { display: flex; flex-direction: column; gap: 6px; }
+        .lh-item {
+            background: rgba(11,19,38,0.6);
+            border: 1px solid rgba(58,73,74,0.3);
+            border-radius: 8px; padding: 8px 10px;
+            animation: mi 0.3s ease both;
+        }
+        .lh-item.correct { border-left: 2px solid var(--tertiary); }
+        .lh-item.wrong   { border-left: 2px solid #f87171; }
+        .lh-ctx {
+            font-size: 10px; color: var(--text-muted);
+            font-family: 'Space Grotesk', sans-serif;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 3px;
+        }
+        .lh-row {
+            display: flex; justify-content: space-between;
+            font-size: 9px; font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 0.08em; text-transform: uppercase;
+        }
+        .lh-pred { color: var(--text-muted); }
+        .lh-badge-ok  { color: var(--tertiary); }
+        .lh-badge-bad { color: #f87171; }
+        .lh-empty { font-size: 10px; color: var(--text-muted); text-align: center; padding: 12px 0; }
     </style>
 </head>
 
@@ -1125,8 +1344,11 @@
     <div class="g1"></div>
     <div class="g2"></div>
 
+    <!-- Learning toast -->
+    <div id="learnToast"><div class="lt-dot"></div>Twin is learning…</div>
+
     <nav class="tnav">
-        <div class="logo">Luminous</div>
+        <div class="logo">AI DigiTwin</div>
         <div class="nc">
             <a href="#" class="act">The Nexus</a>
             <a href="/dataset">Dataset</a>
@@ -1239,6 +1461,25 @@
                 <button class="dbtn" onclick="decide()">
                     <span class="material-symbols-outlined">auto_awesome</span>Decide for me
                 </button>
+            </div>
+
+            <!-- Learning History -->
+            <div class="lhb">
+                <div class="lh-head" onclick="toggleLH()" id="lhHead">
+                    <div class="blbl"><span class="material-symbols-outlined">psychology</span>Learning History</div>
+                    <span class="material-symbols-outlined lh-toggle" id="lhToggle">expand_more</span>
+                </div>
+                <div class="lh-body" id="lhBody">
+                    <div class="lh-acc-row">
+                        <div class="lh-acc-label">Accuracy</div>
+                        <div class="lh-acc-val" id="lhAccVal">—</div>
+                    </div>
+                    <div class="lh-acc-bar"><div class="lh-acc-fill" id="lhAccFill" style="width:0%"></div></div>
+                    <button class="lh-retrain" id="lhRetrainBtn" onclick="retrainDecision()">
+                        <span class="material-symbols-outlined">model_training</span>Retrain on Feedback
+                    </button>
+                    <div class="lh-list" id="lhList"><div class="lh-empty">Rate a decision to start learning</div></div>
+                </div>
             </div>
 
         </div>
@@ -1372,7 +1613,12 @@
 
         function addDecBub(d) {
             rmWel();
-            const w = document.createElement('div'); w.className = 'decb';
+            const w = document.createElement('div');
+            w.className = 'decb';
+            const did = d.decision_id;
+            const optA = document.getElementById('optA').value.trim();
+            const optB = document.getElementById('optB').value.trim();
+
             w.innerHTML = `
     <div class="dblbl"><span class="material-symbols-outlined">balance</span>Decision Engine</div>
     <div class="dbch">${d.decision}</div>
@@ -1380,13 +1626,159 @@
       <div class="cbar"><div class="cfill" style="width:${d.confidence}%"></div></div>
     </div>
     <div class="dbre">💡 ${d.reason}</div>
+    <div class="fb-wrap" id="fb-wrap-${did}">
+      <div class="fb-label">Was this right?</div>
+      <div class="fb-btns">
+        <button class="fb-btn fb-ok" id="fb-ok-${did}" onclick="submitFeedback(${did},'${d.decision}',false,'','${optA}','${optB}')">
+          <span class="material-symbols-outlined">check_circle</span>Correct
+        </button>
+        <button class="fb-btn fb-wrong" id="fb-wrong-${did}" onclick="showWrongPanel(${did},'${d.decision}','${optA}','${optB}')">
+          <span class="material-symbols-outlined">cancel</span>Wrong
+        </button>
+      </div>
+      <div id="fb-wrongpanel-${did}" style="display:none">
+        <div class="fb-wrong-panel">
+          <label>What was actually correct?</label>
+          <div class="fb-choice-btns">
+            <button class="fb-choice" id="fbc-a-${did}" onclick="selectChoice(${did},'a')">${optA}</button>
+            <button class="fb-choice" id="fbc-b-${did}" onclick="selectChoice(${did},'b')">${optB}</button>
+          </div>
+          <textarea class="fb-reason" id="fb-reason-${did}" rows="2" placeholder="Optional: explain why (helps the model learn better)…"></textarea>
+          <button class="fb-submit" id="fb-submit-${did}" onclick="submitWrongFeedback(${did},'${optA}','${optB}')" disabled>Submit Feedback</button>
+        </div>
+      </div>
+    </div>
   `;
             document.getElementById('chat').appendChild(w);
             scr();
         }
 
+        // ── FEEDBACK LOGIC ─────────────────────────────────────────
+        const _choiceMap = {};  // decision_id -> 'a' or 'b'
+
+        function showWrongPanel(did, predicted, optA, optB) {
+            document.getElementById(`fb-wrongpanel-${did}`).style.display = 'block';
+            document.getElementById(`fb-ok-${did}`).disabled = true;
+            scr();
+        }
+
+        function selectChoice(did, choice) {
+            _choiceMap[did] = choice;
+            document.getElementById(`fbc-a-${did}`).classList.toggle('sel', choice === 'a');
+            document.getElementById(`fbc-b-${did}`).classList.toggle('sel', choice === 'b');
+            document.getElementById(`fb-submit-${did}`).disabled = false;
+        }
+
+        function submitWrongFeedback(did, optA, optB) {
+            const choice = _choiceMap[did];
+            if (!choice) return;
+            const correct = choice === 'a' ? optA : optB;
+            const reason  = document.getElementById(`fb-reason-${did}`).value.trim();
+            submitFeedback(did, correct, true, reason, optA, optB);
+        }
+
+        function submitFeedback(did, correct, wasWrong, reason, optA, optB) {
+            const okBtn  = document.getElementById(`fb-ok-${did}`);
+            const wrBtn  = document.getElementById(`fb-wrong-${did}`);
+            const subBtn = document.getElementById(`fb-submit-${did}`);
+            if (okBtn)  okBtn.disabled  = true;
+            if (wrBtn)  wrBtn.disabled  = true;
+            if (subBtn) subBtn.disabled = true;
+
+            fetch('/feedback/decision', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ decision_id: did, correct, was_wrong: wasWrong, reason })
+            })
+            .then(r => r.json())
+            .then(data => {
+                const wrap = document.getElementById(`fb-wrap-${did}`);
+                if (wrap) {
+                    wrap.innerHTML = `<div class="fb-done">${wasWrong ? '❌ Noted — model will learn from this' : '✅ Great — feedback saved!'}</div>`;
+                }
+                if (data.stats) updateAccuracy(data.stats);
+                loadFeedbackHistory();
+            })
+            .catch(() => {
+                const wrap = document.getElementById(`fb-wrap-${did}`);
+                if (wrap) wrap.innerHTML = `<div class="fb-done" style="color:#f87171">⚠ Couldn't save feedback</div>`;
+            });
+        }
+
+        // ── LEARNING HISTORY PANEL ─────────────────────────────────
+        let lhOpen = false;
+        function toggleLH() {
+            lhOpen = !lhOpen;
+            document.getElementById('lhBody').classList.toggle('open', lhOpen);
+            document.getElementById('lhToggle').classList.toggle('open', lhOpen);
+            if (lhOpen) loadFeedbackHistory();
+        }
+
+        function updateAccuracy(stats) {
+            const val  = document.getElementById('lhAccVal');
+            const fill = document.getElementById('lhAccFill');
+            if (!val || !fill) return;
+            val.innerText = stats.total > 0 ? stats.accuracy + '%' : '—';
+            val.className = 'lh-acc-val ' + (stats.accuracy >= 75 ? 'good' : stats.accuracy >= 50 ? 'mid' : 'low');
+            fill.style.width = stats.accuracy + '%';
+            fill.style.background = stats.accuracy >= 75 ? 'var(--tertiary)' : stats.accuracy >= 50 ? '#facc15' : '#f87171';
+        }
+
+        function loadFeedbackHistory() {
+            fetch('/feedback/history')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) return;
+                updateAccuracy(data.stats);
+                const list = document.getElementById('lhList');
+                if (!list) return;
+                if (!data.history.length) {
+                    list.innerHTML = '<div class="lh-empty">Rate a decision to start learning</div>';
+                    return;
+                }
+                list.innerHTML = data.history.slice(0, 5).map(h => `
+                  <div class="lh-item ${h.was_wrong ? 'wrong' : 'correct'}">
+                    <div class="lh-ctx">${h.context}</div>
+                    <div class="lh-row">
+                      <span class="lh-pred">Predicted: ${h.predicted}</span>
+                      <span class="${h.was_wrong ? 'lh-badge-bad' : 'lh-badge-ok'}">${h.was_wrong ? '❌ Wrong' : '✅ Correct'}</span>
+                    </div>
+                  </div>`).join('');
+            });
+        }
+
+        function retrainDecision() {
+            const btn = document.getElementById('lhRetrainBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:12px;animation:spin 1s linear infinite">autorenew</span> Retraining…';
+            fetch('/train/decision', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined">model_training</span> Retrain on Feedback';
+                if (data.stats) updateAccuracy(data.stats);
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined">model_training</span> Retrain on Feedback';
+            });
+        }
+
+        // Load history stats on page load (quietly)
+        loadFeedbackHistory();
+
         function scr() { const c = document.getElementById('chat'); c.scrollTop = c.scrollHeight; }
         function showT(v) { document.getElementById('tind').classList.toggle('on', v); }
+
+        // ── LEARNING TOAST ───────────────────────────────────────
+        let _toastTimer = null;
+        function showLearnToast() {
+            const t = document.getElementById('learnToast');
+            if (!t) return;
+            clearTimeout(_toastTimer);
+            t.classList.add('show');
+            _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+        }
 
         function sendChat() {
             const inp = document.getElementById('msg');
@@ -1398,9 +1790,9 @@
                     showT(false);
                     addMsg(d.reply, 'b');
                     speakText(d.reply);
-                    // Update pair count quietly
                     const pc = document.getElementById('pairCount');
                     if (pc) pc.innerText = parseInt(pc.innerText || 0) + 1;
+                    if (d.learned) showLearnToast();
                 })
                 .catch(() => { showT(false); addMsg('Connection error. Please try again.', 'b'); });
         }

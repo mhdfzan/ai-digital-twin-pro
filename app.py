@@ -2,9 +2,14 @@ from flask import Flask, render_template, request, jsonify, redirect, session
 from chat_utils import (
     chat_reply, train_user_model, ensure_user_data_file,
     add_to_user_data, count_user_data, write_pairs_to_user_data,
-    get_user_data_path, get_user_model_path
+    get_user_data_path, get_user_model_path,
+    learn_from_chat_background
 )
-from decision_utils import predict
+from decision_utils import (
+    predict, log_decision, record_feedback,
+    get_feedback_history, get_feedback_stats,
+    train_user_decision_model, retrain_if_ready
+)
 from personality import apply_style
 from onboarding_questions import QUESTIONS, get_training_pairs_from_answers
 import database
@@ -284,9 +289,12 @@ def chat():
     conn.commit()
     conn.close()
 
+    # Save to dataset file AND incrementally update the semantic model in background
+    # The twin learns from this conversation immediately — no manual retraining needed
     add_to_user_data(username, msg, reply)
+    learn_from_chat_background(username, msg, reply)
 
-    return jsonify({"reply": styled, "confidence": round(conf * 100, 1)})
+    return jsonify({"reply": styled, "confidence": round(conf * 100, 1), "learned": True})
 
 
 # ─── DECIDE ───────────────────────────────────────────────────────
@@ -304,10 +312,71 @@ def decide():
     if not ctx or not a or not b:
         return jsonify({"decision": "Fill all fields.", "confidence": 0, "reason": ""})
 
-    decision, conf, reason = predict(ctx, a, b)
-    return jsonify({"decision": decision, "confidence": conf, "reason": reason})
+    username = session["user"]
+    decision, conf, reason = predict(ctx, a, b, username=username)
+
+    # Log prediction so user can later rate it
+    decision_id = log_decision(username, ctx, a, b, decision)
+
+    return jsonify({
+        "decision":    decision,
+        "confidence":  conf,
+        "reason":      reason,
+        "decision_id": decision_id   # returned so the UI can attach feedback to it
+    })
+
+
+# ─── FEEDBACK ─────────────────────────────────────────────────────
+
+@app.route("/feedback/decision", methods=["POST"])
+def feedback_decision():
+    """User rates a decision as correct or wrong, optionally providing a reason."""
+    if "user" not in session:
+        return jsonify({"success": False, "message": "Not logged in"})
+
+    data        = request.json or {}
+    decision_id = data.get("decision_id")
+    was_wrong   = data.get("was_wrong", False)
+    correct     = data.get("correct", "")   # the actual correct choice
+    reason      = data.get("reason", "")    # optional explanation
+    username    = session["user"]
+
+    if not decision_id or not correct:
+        return jsonify({"success": False, "message": "Missing fields"})
+
+    record_feedback(username, decision_id, correct, was_wrong, reason)
+
+    # Trigger background retrain once enough data accumulated
+    retrain_if_ready(username)
+
+    stats = get_feedback_stats(username)
+    return jsonify({"success": True, "stats": stats})
+
+
+@app.route("/train/decision", methods=["POST"])
+def train_decision_route():
+    """Manually trigger retraining of the user's decision model."""
+    if "user" not in session:
+        return jsonify({"success": False, "message": "Not logged in"})
+
+    username = session["user"]
+    success, message = train_user_decision_model(username)
+    stats = get_feedback_stats(username)
+    return jsonify({"success": success, "message": message, "stats": stats})
+
+
+@app.route("/feedback/history", methods=["GET"])
+def feedback_history():
+    """Return the user's decision feedback history and accuracy stats."""
+    if "user" not in session:
+        return jsonify({"success": False})
+
+    username = session["user"]
+    history  = get_feedback_history(username, limit=20)
+    stats    = get_feedback_stats(username)
+    return jsonify({"success": True, "history": history, "stats": stats})
 
 
 # ──────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True)
