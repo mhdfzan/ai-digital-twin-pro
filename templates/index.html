@@ -1541,6 +1541,16 @@
     </nav>
 
     <script>
+        // ── CHAT ICONS ─────────────────────────────────────────────
+        const USER_ICON  = '{{ avatar }}';
+        const TWIN_ICON_DEFAULT = 'https://api.dicebear.com/7.x/bottts/svg?seed=twin&backgroundColor=0b1326';
+        function getTwinIcon() {
+            try { return JSON.parse(localStorage.getItem('lmnIcons') || '{}').twin || TWIN_ICON_DEFAULT; } catch(e) { return TWIN_ICON_DEFAULT; }
+        }
+        function getUserIcon() {
+            try { return JSON.parse(localStorage.getItem('lmnIcons') || '{}').user || USER_ICON; } catch(e) { return USER_ICON; }
+        }
+
         // ── VOICE ──────────────────────────────────────────────────
         let selVoice = null, vRate = 1, vPitch = 1;
         function applyVoice() {
@@ -1603,7 +1613,8 @@
             rmWel();
             const row = document.createElement('div'); row.className = 'mrow ' + type;
             const av = document.createElement('img'); av.className = 'mav';
-            av.src = type === 'u' ? 'https://i.pravatar.cc/40?img=3' : 'https://i.pravatar.cc/40?img=5';
+            av.src = type === 'u' ? getUserIcon() : getTwinIcon();
+            av.onerror = () => { av.src = type === 'u' ? 'https://i.pravatar.cc/40?img=3' : TWIN_ICON_DEFAULT; };
             const bub = document.createElement('div'); bub.className = 'bub'; bub.innerText = text;
             if (type === 'u') { row.appendChild(bub); row.appendChild(av); }
             else { row.appendChild(av); row.appendChild(bub); }

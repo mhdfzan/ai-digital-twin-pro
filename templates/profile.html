@@ -856,6 +856,59 @@
                 </div>
             </div>
 
+            <!-- CHAT ICONS -->
+            <div class="card" id="iconCard">
+                <div class="ctitle v">
+                    <span class="material-symbols-outlined">manage_accounts</span>
+                    Chat Icon Customization
+                </div>
+
+                <div class="av-editor" style="margin-bottom:24px;">
+                    <div class="av-preview">
+                        <div class="av-ring" style="width:72px;height:72px;">
+                            <img id="myIconImg" src="" alt="my icon" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />
+                            <div class="av-dot"></div>
+                        </div>
+                        <div style="text-align:center;margin-top:6px;font-size:9px;font-family:'Space Grotesk',sans-serif;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Mine</div>
+                    </div>
+                    <div class="av-ctrl">
+                        <div class="sublbl" style="margin-bottom:8px;">My Chat Icon URL</div>
+                        <div class="url-row">
+                            <input class="url-in" id="myIconUrl" type="text" placeholder="Paste image URL or leave blank to use profile avatar…" />
+                            <button type="button" class="url-btn" onclick="applyMyIcon()">Apply</button>
+                        </div>
+                        <div class="sublbl">Quick presets</div>
+                        <div class="presets" id="myIconPresets"></div>
+                    </div>
+                </div>
+
+                <div class="av-editor">
+                    <div class="av-preview">
+                        <div class="av-ring" style="width:72px;height:72px;background:rgba(11,19,38,0.95);">
+                            <img id="twinIconImg" src="" alt="twin icon" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />
+                        </div>
+                        <div style="text-align:center;margin-top:6px;font-size:9px;font-family:'Space Grotesk',sans-serif;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Twin</div>
+                    </div>
+                    <div class="av-ctrl">
+                        <div class="sublbl" style="margin-bottom:8px;">Twin Chat Icon URL</div>
+                        <div class="url-row">
+                            <input class="url-in" id="twinIconUrl" type="text" placeholder="Paste image URL for your twin's chat bubble…" />
+                            <button type="button" class="url-btn" onclick="applyTwinIcon()">Apply</button>
+                        </div>
+                        <div class="sublbl">Quick presets (robot avatars)</div>
+                        <div class="presets" id="twinIconPresets"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top:16px;">
+                    <button type="button" class="bprim" onclick="saveIcons()" style="max-width:220px;padding:12px 20px;font-size:10px;">
+                        <span class="material-symbols-outlined" style="font-size:15px;">save</span>
+                        Save Icons
+                    </button>
+                    <div id="iconMsg" style="margin-top:8px;font-size:10px;font-family:'Space Grotesk',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--tertiary);min-height:16px;"></div>
+                </div>
+            </div>
+
             <!-- ACTIONS -->
             <div class="brow">
                 <button type="submit" class="bprim">
@@ -979,6 +1032,78 @@
         initVoices();
 
         document.getElementById('mainForm').addEventListener('submit', saveCfg);
+
+        // ── CHAT ICONS ────────────────────────────────────────────
+        const USER_AV_FROM_PROFILE = document.getElementById('avHidden').value;
+        const TWIN_ICON_DEFAULT = 'https://api.dicebear.com/7.x/bottts/svg?seed=twin&backgroundColor=0b1326';
+        const MY_ICON_PRESETS  = Array.from({length:8},(_,i)=>`https://i.pravatar.cc/80?img=${i+1}`);
+        const TWIN_ICON_PRESETS = [
+            'https://api.dicebear.com/7.x/bottts/svg?seed=nexus&backgroundColor=0b1326',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=orion&backgroundColor=131b2e',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=ares&backgroundColor=0d1f2d',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=lyra&backgroundColor=16213e',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=vega&backgroundColor=0b1326',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=sirius&backgroundColor=131b2e',
+        ];
+
+        let curMyIcon   = USER_AV_FROM_PROFILE;
+        let curTwinIcon = TWIN_ICON_DEFAULT;
+
+        function loadIconPrefs() {
+            try {
+                const s = JSON.parse(localStorage.getItem('lmnIcons') || '{}');
+                if (s.user)  { curMyIcon   = s.user;  }
+                if (s.twin)  { curTwinIcon = s.twin;  }
+            } catch(e) {}
+            document.getElementById('myIconImg').src    = curMyIcon;
+            document.getElementById('twinIconImg').src  = curTwinIcon;
+            document.getElementById('myIconUrl').value   = curMyIcon !== USER_AV_FROM_PROFILE ? curMyIcon : '';
+            document.getElementById('twinIconUrl').value = curTwinIcon !== TWIN_ICON_DEFAULT ? curTwinIcon : '';
+        }
+
+        function buildIconPresets(containerId, presets, pickFn) {
+            const g = document.getElementById(containerId);
+            presets.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url; img.className = 'pav';
+                img.style.cssText = 'width:38px;height:38px;';
+                img.onclick = () => pickFn(url);
+                g.appendChild(img);
+            });
+        }
+
+        function applyMyIcon() {
+            const v = document.getElementById('myIconUrl').value.trim();
+            if (v) { curMyIcon = v; document.getElementById('myIconImg').src = v; }
+        }
+        function applyTwinIcon() {
+            const v = document.getElementById('twinIconUrl').value.trim();
+            if (v) { curTwinIcon = v; document.getElementById('twinIconImg').src = v; }
+        }
+        function pickMyIconPreset(url) {
+            curMyIcon = url;
+            document.getElementById('myIconImg').src = url;
+            document.getElementById('myIconUrl').value = url;
+            document.querySelectorAll('#myIconPresets .pav').forEach(el => el.classList.toggle('sel', el.src === url || new URL(el.src,location.href).href === url));
+        }
+        function pickTwinIconPreset(url) {
+            curTwinIcon = url;
+            document.getElementById('twinIconImg').src = url;
+            document.getElementById('twinIconUrl').value = url;
+            document.querySelectorAll('#twinIconPresets .pav').forEach(el => el.classList.toggle('sel', el.src === url || new URL(el.src,location.href).href === url));
+        }
+        function saveIcons() {
+            try {
+                localStorage.setItem('lmnIcons', JSON.stringify({ user: curMyIcon, twin: curTwinIcon }));
+                const m = document.getElementById('iconMsg');
+                m.innerText = '✓ Icons saved — will appear in chat immediately';
+                setTimeout(() => { m.innerText = ''; }, 3000);
+            } catch(e) { document.getElementById('iconMsg').innerText = 'Could not save.'; }
+        }
+
+        buildIconPresets('myIconPresets',   MY_ICON_PRESETS,   pickMyIconPreset);
+        buildIconPresets('twinIconPresets',  TWIN_ICON_PRESETS, pickTwinIconPreset);
+        loadIconPrefs();
     </script>
 </body>
 

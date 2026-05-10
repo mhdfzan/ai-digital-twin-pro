@@ -1,5 +1,3 @@
 flask
-sentence-transformers
-scikit-learn
-joblib
-numpy
+google-generativeai
+psycopg2-binary

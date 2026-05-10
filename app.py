@@ -13,17 +13,16 @@ from decision_utils import (
 from personality import apply_style
 from onboarding_questions import QUESTIONS, get_training_pairs_from_answers
 import database
-import sqlite3
 import os
 
 app = Flask(__name__)
-app.secret_key = "secret123"
+app.secret_key = os.environ.get("SECRET_KEY", "secret123-change-in-production")
 
 database.init_db()
 
 
 def db():
-    return sqlite3.connect("app.db")
+    return database.get_conn()
 
 
 # ─── AUTH ─────────────────────────────────────────────────────────
@@ -36,7 +35,7 @@ def login():
 
         conn = db()
         c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE username=? AND password=?", (u, p))
+        c.execute(database._pg("SELECT * FROM users WHERE username=? AND password=?"), (u, p))
         user = c.fetchone()
         conn.close()
 
@@ -64,10 +63,10 @@ def signup():
         conn = db()
         c = conn.cursor()
         try:
-            c.execute("""
+            c.execute(database._pg("""
                 INSERT INTO users(username, password, name, bio, avatar, personality)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (u, p, name, bio, avatar, personality))
+            """), (u, p, name, bio, avatar, personality))
             conn.commit()
         except Exception:
             conn.close()
@@ -149,7 +148,7 @@ def home():
 
     conn = db()
     c = conn.cursor()
-    c.execute("SELECT name, bio, avatar FROM users WHERE username=?", (session["user"],))
+    c.execute(database._pg("SELECT name, bio, avatar FROM users WHERE username=?"), (session["user"],))
     user = c.fetchone()
     conn.close()
 
@@ -159,7 +158,7 @@ def home():
 
     ensure_user_data_file(session["user"])
     pair_count = count_user_data(session["user"])
-    has_model  = os.path.exists(get_user_model_path(session["user"]))
+    has_model  = pair_count >= 3
 
     return render_template("index.html",
                            name=user[0],
@@ -185,13 +184,13 @@ def profile():
         personality = request.form.get("personality", "casual")
         avatar      = request.form.get("avatar", "").strip() or f"https://i.pravatar.cc/150?u={session['user']}"
 
-        c.execute("UPDATE users SET name=?, bio=?, personality=?, avatar=? WHERE username=?",
+        c.execute(database._pg("UPDATE users SET name=?, bio=?, personality=?, avatar=? WHERE username=?"),
                   (name, bio, personality, avatar, session["user"]))
         conn.commit()
         conn.close()
         return redirect("/")
 
-    c.execute("SELECT name, bio, avatar, personality FROM users WHERE username=?", (session["user"],))
+    c.execute(database._pg("SELECT name, bio, avatar, personality FROM users WHERE username=?"), (session["user"],))
     user = c.fetchone()
     conn.close()
 
@@ -277,15 +276,15 @@ def chat():
 
     conn = db()
     c = conn.cursor()
-    c.execute("SELECT personality FROM users WHERE username=?", (username,))
+    c.execute(database._pg("SELECT personality FROM users WHERE username=?"), (username,))
     row = c.fetchone()
     personality = row[0] if row else "casual"
 
     reply, conf = chat_reply(msg, username=username)
     styled      = apply_style(reply, personality)
 
-    c.execute("INSERT INTO messages VALUES (NULL,?,?,?,CURRENT_TIMESTAMP)", (username, "user", msg))
-    c.execute("INSERT INTO messages VALUES (NULL,?,?,?,CURRENT_TIMESTAMP)", (username, "bot", styled))
+    c.execute(database._pg("INSERT INTO messages (username, sender, message) VALUES (?,?,?)"), (username, "user", msg))
+    c.execute(database._pg("INSERT INTO messages (username, sender, message) VALUES (?,?,?)"), (username, "bot", styled))
     conn.commit()
     conn.close()
 

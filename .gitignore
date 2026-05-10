@@ -13,8 +13,7 @@ __pycache__/
 *.db
 
 # Trained models (large binary files — regenerate locally)
-model/**/*.pkl
-model/*.pkl
+model/
 
 # Per-user training data (private)
 data/
@@ -23,4 +22,4 @@ data/
 .vscode/
 .idea/
 .DS_Store
-Thumbs.db
+Thumbs.db
