@@ -12,17 +12,17 @@ import database
 
 # ── Gemini setup ──────────────────────────────────────────────────────────────
 
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
-_gemini_model = None
+GEMINI_KEY   = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = "gemini-2.0-flash"
+_client = None
 
 
-def _get_model():
-    global _gemini_model
-    if _gemini_model is None and GEMINI_KEY:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_KEY)
-        _gemini_model = genai.GenerativeModel("gemini-pro")
-    return _gemini_model
+def _get_client():
+    global _client
+    if _client is None and GEMINI_KEY:
+        from google import genai as google_genai
+        _client = google_genai.Client(api_key=GEMINI_KEY)
+    return _client
 
 
 SIMILARITY_THRESHOLD = 0.40   # keyword overlap threshold
@@ -258,8 +258,8 @@ def predict(context, option_a, option_b, username=None):
             return match, confidence, reason
 
     # ── 2. Gemini reasoning ───────────────────────────────────────────────────
-    model = _get_model()
-    if model:
+    client = _get_client()
+    if client:
         history_hint = ""
         if username:
             rows = get_confirmed_training_data(username)
@@ -279,14 +279,12 @@ def predict(context, option_a, option_b, username=None):
             f"Reply with ONLY the option text (exact match of A or B), nothing else."
         )
         try:
-            response  = model.generate_content(prompt)
-            raw       = response.text.strip()
-            # Match whichever option text appears in the response
-            if option_b.lower() in raw.lower():
-                decision = option_b
-            else:
-                decision = option_a
-            reason = _reason_from_context(context, decision)
+            response = client.models.generate_content(
+                model=GEMINI_MODEL, contents=prompt
+            )
+            raw      = response.text.strip()
+            decision = option_b if option_b.lower() in raw.lower() else option_a
+            reason   = _reason_from_context(context, decision)
             return decision, 78.0, reason
         except Exception:
             pass

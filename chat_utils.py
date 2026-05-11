@@ -1,33 +1,30 @@
 """
 chat_utils.py — Gemini-powered chat twin.
 
-Replaces sentence-transformers + local .pkl files with:
-  - Google Gemini API  (generates contextual replies as the user's twin)
-  - Postgres / SQLite  (stores conversation pairs in user_chat_data table)
-
-Falls back to a simple keyword match when Gemini key is not set (local dev).
+Uses the new google-genai SDK (google.genai) with gemini-2.0-flash.
+Stores conversation pairs in Postgres / SQLite (no local files on Vercel).
 """
 
 import os
 import random
-import google.generativeai as genai
+from google import genai as google_genai
 import database
 
-# ── Gemini setup ─────────────────────────────────────────────────────────────
+# ── Gemini setup ──────────────────────────────────────────────────────────────
 
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
-_gemini_model = None
-
-
-def _get_model():
-    global _gemini_model
-    if _gemini_model is None and GEMINI_KEY:
-        genai.configure(api_key=GEMINI_KEY)
-        _gemini_model = genai.GenerativeModel("gemini-pro")
-    return _gemini_model
+GEMINI_KEY  = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = "gemini-2.0-flash"
+_client = None
 
 
-# ── Path helpers (kept for backward compat — no longer write files) ───────────
+def _get_client():
+    global _client
+    if _client is None and GEMINI_KEY:
+        _client = google_genai.Client(api_key=GEMINI_KEY)
+    return _client
+
+
+# ── Path helpers (kept for backward compat — no longer write files on Vercel) ─
 
 def get_user_model_path(username):
     return os.path.join("model", "users", username, "semantic_model.pkl")
@@ -44,7 +41,7 @@ def get_global_model_path():
 # ── Data helpers (DB-backed) ──────────────────────────────────────────────────
 
 def ensure_user_data_file(username, seed_data=False):
-    """No-op on Postgres; still creates local file for SQLite dev mode."""
+    """No-op on Postgres; creates local file for SQLite dev mode."""
     if not database._USE_POSTGRES:
         data_path = get_user_data_path(username)
         if not os.path.exists(data_path):
@@ -68,7 +65,7 @@ def add_to_user_data(username, user_input, bot_reply):
     conn.commit()
     conn.close()
 
-    # Also write to local file in SQLite dev mode (keeps dataset.html working)
+    # Also write to local file in SQLite dev mode
     if not database._USE_POSTGRES:
         data_path = get_user_data_path(username)
         os.makedirs(os.path.dirname(data_path), exist_ok=True)
@@ -122,47 +119,31 @@ def _get_recent_pairs(username, limit=40):
     )
     rows = c.fetchall()
     conn.close()
-    return list(reversed(rows))   # oldest first → better prompt order
+    return list(reversed(rows))
 
 
-# ── Training (becomes a lightweight no-op for Gemini mode) ───────────────────
+# ── Training ──────────────────────────────────────────────────────────────────
 
 def train_user_model(username):
-    """
-    In Gemini mode: data is already in DB, nothing to train.
-    In local SQLite dev mode: rebuild .pkl from local file if it exists.
-    """
-    if database._USE_POSTGRES or not GEMINI_KEY:
-        count = count_user_data(username)
-        if count < 3:
-            return False, f"Need at least 3 conversation pairs. You have {count}."
-        return True, f"Twin ready — {count} conversation pairs loaded. 🧠"
-
-    # Local fallback: try the legacy pkl approach
-    data_path = get_user_data_path(username)
-    if not os.path.exists(data_path):
-        return False, "No training data found."
     count = count_user_data(username)
     if count < 3:
-        return False, f"Need at least 3 pairs. You have {count}."
-    return True, f"Twin trained on {count} conversation pairs."
+        return False, f"Need at least 3 conversation pairs. You have {count}."
+    return True, f"Twin ready — {count} conversation pairs loaded. 🧠"
 
 
 def invalidate_user_model(username):
-    pass   # nothing to invalidate — Gemini reads DB live
+    pass
 
 
 def learn_from_chat(username, user_input, bot_reply):
-    """Store new pair in DB (already done by add_to_user_data)."""
     pass
 
 
 def learn_from_chat_background(username, user_input, bot_reply):
-    """Sync in serverless; data written by add_to_user_data already."""
     pass
 
 
-# ── Decision feedback bridge (kept for cross-module compat) ──────────────────
+# ── Decision feedback bridge ──────────────────────────────────────────────────
 
 CHAT_DECISION_SIM_THRESHOLD = 0.38
 
@@ -178,11 +159,10 @@ def search_decision_feedback(username, user_input):
         query = user_input.lower().strip()
         for ctx, opt_a, opt_b, correct in rows:
             combined = f"{ctx} {opt_a} {opt_b}".lower()
-            # Simple keyword overlap score (no sklearn on Vercel)
-            q_words   = set(query.split())
-            c_words   = set(combined.split())
-            overlap   = len(q_words & c_words)
-            score     = overlap / max(len(q_words), 1)
+            q_words  = set(query.split())
+            c_words  = set(combined.split())
+            overlap  = len(q_words & c_words)
+            score    = overlap / max(len(q_words), 1)
             if score >= CHAT_DECISION_SIM_THRESHOLD:
                 answer = (
                     f"Based on your past choices, you prefer **{correct}** "
@@ -202,55 +182,50 @@ def chat_reply(user_input, username=None):
     Generate a reply as the user's digital twin.
 
     Priority:
-      1. Decision-feedback history match (personalised past choice)
-      2. Gemini API with recent conversation pairs as few-shot context
-      3. Keyword fallback (when Gemini key is absent — local dev)
+      1. Decision-feedback history match
+      2. Gemini API (gemini-2.0-flash) with conversation context
+      3. Keyword fallback (no Gemini key)
     """
     if not user_input.strip():
         return "Say something! 😄", 0.0
 
-    # ── 1. Decision feedback override ────────────────────────────────────────
+    # ── 1. Decision feedback override ─────────────────────────────────────────
     if username:
         dec_reply, dec_conf = search_decision_feedback(username, user_input)
         if dec_reply:
             return dec_reply, dec_conf
 
-    # ── 2. Gemini with conversation history ──────────────────────────────────
-    model = _get_model()
-    if model and username:
+    # ── 2. Gemini ─────────────────────────────────────────────────────────────
+    client = _get_client()
+    if client and username:
         pairs = _get_recent_pairs(username, limit=40)
         if pairs:
             examples = "\n".join(
-                f"User said: \"{inp}\"\nTwin replied: \"{out}\""
-                for inp, out in pairs[-20:]   # last 20 for context window
+                f'User said: "{inp}"\nTwin replied: "{out}"'
+                for inp, out in pairs[-20:]
             )
             prompt = (
                 f"You are the digital twin of user '{username}'. "
-                f"Your job is to reply exactly as that person would — "
-                f"using their tone, vocabulary, and personality. "
-                f"Here are examples of how they talk:\n\n"
-                f"{examples}\n\n"
-                f"Now the user says: \"{user_input}\"\n"
-                f"Reply as their twin (1-3 sentences, matching their style):"
+                f"Reply exactly as that person would — matching their tone and style.\n\n"
+                f"Past conversations:\n{examples}\n\n"
+                f"User says: \"{user_input}\"\n"
+                f"Twin reply (1-3 sentences):"
             )
-            try:
-                response = model.generate_content(prompt)
-                reply = response.text.strip()
-                return reply, 0.92
-            except Exception as e:
-                return f"Twin is thinking... (error: {e})", 0.0
         else:
-            # No history yet — ask Gemini for a friendly default
-            try:
-                response = model.generate_content(
-                    f"You are a digital twin AI. The user '{username}' just said: \"{user_input}\". "
-                    f"Reply in a friendly, casual way (1-2 sentences):"
-                )
-                return response.text.strip(), 0.75
-            except Exception:
-                pass
+            prompt = (
+                f"You are a friendly digital twin AI. "
+                f"The user '{username}' just said: \"{user_input}\". "
+                f"Reply in a friendly, casual way (1-2 sentences):"
+            )
+        try:
+            response = client.models.generate_content(
+                model=GEMINI_MODEL, contents=prompt
+            )
+            return response.text.strip(), 0.92
+        except Exception as e:
+            return f"Twin is thinking... (error: {e})", 0.0
 
-    # ── 3. Keyword fallback (local dev without Gemini key) ───────────────────
+    # ── 3. Keyword fallback ───────────────────────────────────────────────────
     if username:
         pairs = _get_recent_pairs(username, limit=50)
         if pairs:
@@ -258,9 +233,9 @@ def chat_reply(user_input, username=None):
             best    = None
             best_sc = 0
             for inp, out in pairs:
-                words  = set(inp.lower().split())
+                words   = set(inp.lower().split())
                 q_words = set(query.split())
-                sc     = len(words & q_words) / max(len(q_words), 1)
+                sc      = len(words & q_words) / max(len(q_words), 1)
                 if sc > best_sc:
                     best_sc = sc
                     best    = out
