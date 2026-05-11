@@ -12,8 +12,8 @@ import database
 
 # ── Gemini setup ──────────────────────────────────────────────────────────────
 
-GEMINI_KEY  = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_KEY   = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = "gemini-2.5-flash"   # upgrade from 2.0-flash for better free-tier quota
 _client = None
 
 
@@ -223,7 +223,12 @@ def chat_reply(user_input, username=None):
             )
             return response.text.strip(), 0.92
         except Exception as e:
-            return f"Twin is thinking... (error: {e})", 0.0
+            err = str(e)
+            # Quota/rate-limit hit — fall through to keyword fallback silently
+            if "429" in err or "RESOURCE_EXHAUSTED" in err or "quota" in err.lower():
+                pass
+            else:
+                return f"Twin is thinking... give me a second 🤔", 0.0
 
     # ── 3. Keyword fallback ───────────────────────────────────────────────────
     if username:

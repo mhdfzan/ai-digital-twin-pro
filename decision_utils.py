@@ -13,7 +13,7 @@ import database
 # ── Gemini setup ──────────────────────────────────────────────────────────────
 
 GEMINI_KEY   = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
 _client = None
 
 
