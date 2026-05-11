@@ -210,41 +210,59 @@ def dataset():
     if "user" not in session:
         return redirect("/login")
 
-    username  = session["user"]
-    data_path = get_user_data_path(username)
-    ensure_user_data_file(username)
-    message = ""
+    username = session["user"]
+    message  = ""
 
     if request.method == "POST":
         action = request.form.get("action")
 
-        if action == "save":
-            content = request.form.get("content", "")
-            with open(data_path, "w", encoding="utf-8") as f:
-                f.write(content)
-            message = "✅ Dataset saved."
-
-        elif action == "add_pair":
+        if action == "add_pair":
             inp = request.form.get("inp", "").strip()
             out = request.form.get("out", "").strip()
             if inp and out:
-                with open(data_path, "a", encoding="utf-8") as f:
-                    f.write(f"{inp} → {out}\n")
-                message = f"✅ Added: '{inp} → {out}'"
+                add_to_user_data(username, inp, out)
+                message = f"Added: '{inp} → {out}'"
             else:
-                message = "⚠ Both fields are required."
+                message = "Both fields are required."
+
+        elif action == "save":
+            # Bulk-save: parse the textarea content back into pairs and replace DB rows
+            content = request.form.get("content", "")
+            conn = db()
+            c    = conn.cursor()
+            c.execute(database._pg("DELETE FROM user_chat_data WHERE username = ?"), (username,))
+            conn.commit()
+            conn.close()
+            pairs = []
+            for line in content.splitlines():
+                line = line.strip()
+                if "→" in line:
+                    parts = line.split("→", 1)
+                    if len(parts) == 2 and parts[0].strip() and parts[1].strip():
+                        pairs.append((parts[0].strip(), parts[1].strip()))
+            if pairs:
+                write_pairs_to_user_data(username, pairs)
+            message = f"Dataset saved — {len(pairs)} pairs."
 
         elif action == "train":
             success, msg = train_user_model(username)
-            message = ("✅ " if success else "❌ ") + msg
+            message = msg
 
-    with open(data_path, "r", encoding="utf-8") as f:
-        content = f.read()
+    # Build text content from DB for the textarea
+    conn = db()
+    c    = conn.cursor()
+    c.execute(
+        database._pg("SELECT input, output FROM user_chat_data WHERE username = ? ORDER BY id"),
+        (username,)
+    )
+    rows    = c.fetchall()
+    conn.close()
+    content = "\n".join(f"{inp} → {out}" for inp, out in rows)
 
     return render_template("dataset.html",
                            content=content,
-                           pair_count=count_user_data(username),
-                           has_model=os.path.exists(get_user_model_path(username)),
+                           pair_count=len(rows),
+                           has_model=len(rows) >= 3,
                            message=message)
 
 
